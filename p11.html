@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulator Biaya Listrik</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f8ff;
+            color: #333;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #4CAF50;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #ffffff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+
+        label {
+            font-weight: bold;
+            color: #333;
+        }
+
+        input[type="number"], input[type="text"], input[type="submit"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        input[type="submit"] {
+            background-color: #4CAF50;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #45a049;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #e7f7f2;
+            border-left: 6px solid #4CAF50;
+        }
+
+        .result p {
+            margin: 10px 0;
+        }
+
+        canvas {
+            margin-top: 20px;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<div class="container">
+    <h1>Kalkulator Biaya Listrik</h1>
+    
+    <form id="electricityForm">
+        <label for="jumlahAlat">Masukkan jumlah alat:</label>
+        <input type="number" id="jumlahAlat" min="1" required>
+
+        <div id="alatInput"></div>
+
+        <input type="submit" value="Hitung">
+    </form>
+
+    <div id="resultContainer" class="result" style="display:none;">
+        <h2>Hasil</h2>
+        <p id="totalKwh">Total konsumsi energi: <strong></strong> kWh</p>
+        <p id="totalBiaya">Total biaya listrik: Rp <strong></strong></p>
+    </div>
+
+    <canvas id="comparisonChart" style="display:none;"></canvas>
+</div>
+
+<script>
+    const form = document.getElementById('electricityForm');
+    const alatInput = document.getElementById('alatInput');
+    const resultContainer = document.getElementById('resultContainer');
+    const comparisonChart = document.getElementById('comparisonChart');
+
+    let myChart; // Variable to hold the chart instance
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        
+        const jumlahAlat = document.getElementById('jumlahAlat').value;
+
+        let totalKwh = 0;
+        let totalBiaya = 0;
+
+        const labels = [];
+        const dataKwh = [];
+        const dataBiaya = [];
+
+        for (let i = 0; i < jumlahAlat; i++) {
+            const daya = parseFloat(document.getElementById(`daya_${i}`).value);
+            const jam = parseFloat(document.getElementById(`jam_${i}`).value);
+            const hari = parseFloat(document.getElementById(`hari_${i}`).value);
+            const tarif = parseFloat(document.getElementById(`tarif_${i}`).value);
+
+            const kwh = (daya * jam * hari) / 1000; // Menghitung kWh
+            const biaya = kwh * tarif; // Menghitung biaya
+
+            totalKwh += kwh; // Menjumlahkan total kWh
+            totalBiaya += biaya; // Menjumlahkan total biaya
+
+            labels.push(`Alat ${i + 1}`); // Menambahkan label untuk grafik
+            dataKwh.push(kwh); // Menambahkan data kWh untuk grafik
+            dataBiaya.push(biaya); // Menambahkan data biaya untuk grafik
+        }
+
+        document.getElementById('totalKwh').querySelector('strong').textContent = totalKwh.toFixed(2);
+        document.getElementById('totalBiaya').querySelector('strong').textContent = totalBiaya.toFixed(2);
+
+        resultContainer.style.display = 'block';
+        
+        // Menampilkan grafik
+        comparisonChart.style.display = 'block';
+
+        // Destroy the previous chart if it exists
+        if (myChart) {
+            myChart.destroy();
+        }
+        
+        // Create a new chart
+        myChart = new Chart(comparisonChart, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Konsumsi Energi (kWh)',
+                        data: dataKwh,
+                        backgroundColor: 'rgba(76, 175, 80, 0.5)',
+                        borderColor: 'rgba(76, 175, 80, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Total Biaya (Rp)',
+                        data: dataBiaya,
+                        backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                scales: {
+                    yAxes: [{
+                        ticks: {
+                            beginAtZero:true
+                        }
+                    }]
+                }
+            }
+        });
+    });
+
+    document.getElementById('jumlahAlat').addEventListener('input', function () {
+        alatInput.innerHTML = '';
+        const jumlahAlat = document.getElementById('jumlahAlat').value;
+
+        for (let i = 0; i < jumlahAlat; i++) {
+            alatInput.innerHTML += `
+                <h3>Alat ke-${i + 1}</h3>
+                <label for="daya_${i}">Daya (watt):</label>
+                <input type="number" id="daya_${i}" min="1" required>
+                
+                <label for="jam_${i}">Jam penggunaan per hari:</label>
+                <input type="number" id="jam_${i}" min="0" required>
+                
+                <label for="hari_${i}">Hari penggunaan:</label>
+                <input type="number" id="hari_${i}" min="0" required>
+                
+                <label for="tarif_${i}">Tarif listrik per kWh (Rp):</label>
+                <input type="number" id="tarif_${i}" min="0" required>
+            `;
+        }
+    });
+</script>
+
+</body>
+</html>
